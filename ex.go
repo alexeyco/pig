@@ -14,15 +14,15 @@ type executable interface {
 	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
 }
 
-// Executor to execute queries.
-type Executor struct {
-	ex  executable
-	ctx context.Context
+// Ex to execute queries.
+type Ex struct {
+	ex      executable
+	options Options
 }
 
 // Exec query and return affected rows.
-func (e *Executor) Exec(sql string, args ...interface{}) (int64, error) {
-	t, err := e.ex.Exec(e.ctx, sql, args...)
+func (e *Ex) Exec(sql string, args ...interface{}) (int64, error) {
+	t, err := e.ex.Exec(e.options.Context, sql, args...)
 	if err != nil {
 		return 0, errors.Wrap(err, "pig: execute query")
 	}
@@ -31,8 +31,8 @@ func (e *Executor) Exec(sql string, args ...interface{}) (int64, error) {
 }
 
 // Get single record.
-func (e *Executor) Get(dst interface{}, sql string, args ...interface{}) error {
-	rows, err := e.ex.Query(e.ctx, sql, args...)
+func (e *Ex) Get(dst interface{}, sql string, args ...interface{}) error {
+	rows, err := e.ex.Query(e.options.Context, sql, args...)
 	if err != nil {
 		return errors.Wrap(err, "pig: get one result row")
 	}
@@ -43,8 +43,8 @@ func (e *Executor) Get(dst interface{}, sql string, args ...interface{}) error {
 }
 
 // Select multiple records.
-func (e *Executor) Select(dst interface{}, sql string, args ...interface{}) error {
-	rows, err := e.ex.Query(e.ctx, sql, args...)
+func (e *Ex) Select(dst interface{}, sql string, args ...interface{}) error {
+	rows, err := e.ex.Query(e.options.Context, sql, args...)
 	if err != nil {
 		return errors.Wrap(err, "pig: select multiple result row")
 	}
