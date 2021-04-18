@@ -1,6 +1,11 @@
 # pig
 
-Simple [pgx](https://github.com/jackc/pgx) wrapper to execute and [scan](https://github.com/georgysavva/scany) query
+[![Build](https://github.com/alexeyco/pig/actions/workflows/test.yml/badge.svg)](https://github.com/alexeyco/pig/actions/workflows/test.yml)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/alexeyco/pig)](https://pkg.go.dev/github.com/alexeyco/pig)
+[![Go Report Card](https://goreportcard.com/badge/github.com/alexeyco/pig)](https://goreportcard.com/report/github.com/alexeyco/pig)
+[![Coverage Status](https://coveralls.io/repos/github/alexeyco/pig/badge.svg?branch=main)](https://coveralls.io/github/alexeyco/pig?branch=main)
+
+Simple [pgx](https://github.com/jackc/pgx) wrapper to execute and [scan](https://github.com/alexeyco/pig) query
 results.
 
 ## Features

@@ -29,13 +29,22 @@ jobs:
       - name: Show Go version
         run: go version
       - name: Install dependencies
-        run: go mod vendor
         working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
-      - name: golangci-lint
+        run: go mod vendor
+      - name: Lint source code
         uses: golangci/golangci-lint-action@v2
         with:
           working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
           version: v1.38.0
       - name: Run tests
-        run: go test -v .
         working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
+        run: go test -race -covermode atomic -coverprofile=coverage.out .
+      - name: Install goveralls
+        env:
+          GO111MODULE: off
+        run: go get github.com/mattn/goveralls
+      - name: Upload coverage
+        env:
+          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+        working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
+        run: goveralls -coverprofile=coverage.out -service=github
