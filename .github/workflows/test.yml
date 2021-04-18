@@ -1,5 +1,5 @@
 ---
-name: Go
+name: Test
 on:
   push:
     tags:
@@ -15,8 +15,9 @@ jobs:
       fail-fast: false
       matrix:
         go:
-          - 1.16.x
-          - tip
+          - 1.14
+          - 1.15
+          - 1.x # Latest version
     steps:
       - name: Check out
         uses: actions/checkout@v2
@@ -45,6 +46,7 @@ jobs:
         run: go get github.com/mattn/goveralls
       - name: Upload coverage
         env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+          COVERALLS_TOKEN: ${{ github.token }}
+          GIT_BRANCH: ${{ github.head_ref }}
         working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
         run: goveralls -coverprofile=coverage.out -service=github
