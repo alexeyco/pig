@@ -14,16 +14,142 @@ results.
 
 ## Usage
 
-### Execute queries
+### Execute query
 
 ```go
+package main
 
+import (
+	"context"
+	"log"
+
+	"github.com/alexeyco/pig"
+	"github.com/jackc/pgx/v4"
+)
+
+func main() {
+	conn, err := pgx.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	p := pig.New(conn)
+
+	affectedRows, err := p.Query().Exec("DELETE FROM things WHERE id = $1", 123)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("affected", affectedRows, "rows")
+}
+```
+
+### Get single entity
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+
+	"github.com/alexeyco/pig"
+	"github.com/jackc/pgx/v4"
+)
+
+func main() {
+	conn, err := pgx.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	p := pig.New(conn)
+
+	var cnt int64
+	err = p.Query().Get(&cnt, "SELECT count(*) FROM things")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println(cnt, "things found")
+}
+```
+
+### Select multiple entities
+
+```go
+package main
+
+import (
+	"context"
+	"log"
+
+	"github.com/alexeyco/pig"
+	"github.com/jackc/pgx/v4"
+)
+
+type Thing struct {
+	ID       int64  `db:"id"`
+	Name     string `db:"name"`
+	Quantity int64  `db:"quantity"`
+}
+
+func main() {
+	conn, err := pgx.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	p := pig.New(conn)
+
+	var things []Thing
+	err = p.Query().Select(&things, "SELECT * FROM things")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println(things)
+}
 ```
 
 ### Make transactions
 
 ```go
+package main
 
+import (
+	"context"
+	"log"
+	"time"
+
+	"github.com/alexeyco/pig"
+	"github.com/jackc/pgx/v4"
+)
+
+func main() {
+	conn, err := pgx.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	p := pig.New(conn)
+
+	var affectedRows int64
+	err = p.Tx(pig.TransactionTimeout(time.Second)).
+		Exec(func(ex *pig.Ex) error {
+			affectedRows, err = p.Query().Exec("DELETE FROM things WHERE id = $1", 123)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("affected", affectedRows, "rows")
+}
 ```
 
 ## License

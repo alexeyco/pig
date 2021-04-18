@@ -3,12 +3,14 @@ package pig_test
 import (
 	"context"
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/alexeyco/pig"
+	"github.com/jackc/pgx/v4"
 	"github.com/pashagolub/pgxmock"
 	"github.com/pkg/errors"
 )
@@ -73,13 +75,13 @@ func TestPig_Query(t *testing.T) {
 		conn := connect(t)
 		defer func() { _ = conn.Close(context.Background()) }()
 
-		conn.ExpectExec("DELETE FROM table WHERE id = $1").
+		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
 
 		rowsAffected, err := pig.New(conn).
 			Query().
-			Exec("DELETE FROM table WHERE id = $1", 123)
+			Exec("DELETE FROM things WHERE id = $1", 123)
 		if err != nil {
 			t.Fatalf(`should be nil, "%v" given`, err)
 		}
@@ -99,12 +101,12 @@ func TestPig_Query(t *testing.T) {
 		conn := connect(t)
 		defer func() { _ = conn.Close(context.Background()) }()
 
-		conn.ExpectExec("DELETE FROM table WHERE id = $1").
+		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WillReturnError(errExpected)
 
 		rowsAffected, err := pig.New(conn).
 			Query().
-			Exec("DELETE FROM table WHERE id = $1", 123)
+			Exec("DELETE FROM things WHERE id = $1", 123)
 
 		if err == nil {
 			t.Fatal(`should not be nil`)
@@ -128,14 +130,14 @@ func TestPig_Query(t *testing.T) {
 		rows := conn.NewRows([]string{"id", "name", "quantity"}).
 			AddRow(int64(123), "Some thing", int64(456))
 
-		conn.ExpectQuery("SELECT FROM table WHERE id = $1").
+		conn.ExpectQuery("SELECT * FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnRows(rows)
 
 		var actual thing
 		err := pig.New(conn).
 			Query().
-			Get(&actual, "SELECT FROM table WHERE id = $1", 123)
+			Get(&actual, "SELECT * FROM things WHERE id = $1", 123)
 		if err != nil {
 			t.Fatalf(`should be nil, "%v" given`, err)
 		}
@@ -161,14 +163,14 @@ func TestPig_Query(t *testing.T) {
 		conn := connect(t)
 		defer func() { _ = conn.Close(context.Background()) }()
 
-		conn.ExpectQuery("SELECT FROM table WHERE id = $1").
+		conn.ExpectQuery("SELECT * FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnError(errExpected)
 
 		var actual thing
 		err := pig.New(conn).
 			Query().
-			Get(&actual, "SELECT FROM table WHERE id = $1", 123)
+			Get(&actual, "SELECT * FROM things WHERE id = $1", 123)
 		if err == nil {
 			t.Fatal(`should not be nil`)
 		}
@@ -192,14 +194,14 @@ func TestPig_Query(t *testing.T) {
 			AddRow(int64(123), "Some thing1", int64(456)).
 			AddRow(int64(789), "Some thing2", int64(123))
 
-		conn.ExpectQuery("SELECT FROM table WHERE id = $1").
+		conn.ExpectQuery("SELECT * FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnRows(rows)
 
 		var actual things
 		err := pig.New(conn).
 			Query().
-			Select(&actual, "SELECT FROM table WHERE id = $1", 123)
+			Select(&actual, "SELECT * FROM things WHERE id = $1", 123)
 		if err != nil {
 			t.Fatalf(`should be nil, "%v" given`, err)
 		}
@@ -232,14 +234,14 @@ func TestPig_Query(t *testing.T) {
 		conn := connect(t)
 		defer func() { _ = conn.Close(context.Background()) }()
 
-		conn.ExpectQuery("SELECT FROM table WHERE id = $1").
+		conn.ExpectQuery("SELECT * FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnError(errExpected)
 
 		var actual things
 		err := pig.New(conn).
 			Query().
-			Select(&actual, "SELECT FROM table WHERE id = $1", 123)
+			Select(&actual, "SELECT * FROM things WHERE id = $1", 123)
 		if err == nil {
 			t.Fatal(`should not be nil`)
 		}
@@ -264,7 +266,7 @@ func TestPig_Tx(t *testing.T) {
 		defer func() { _ = conn.Close(context.Background()) }()
 
 		conn.ExpectBegin()
-		conn.ExpectExec("DELETE FROM table WHERE id = $1").
+		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
 		conn.ExpectCommit()
@@ -273,7 +275,7 @@ func TestPig_Tx(t *testing.T) {
 		err := pig.New(conn).
 			Tx().
 			Exec(func(ex *pig.Ex) error {
-				_, err := ex.Exec("DELETE FROM table WHERE id = $1", 123)
+				_, err := ex.Exec("DELETE FROM things WHERE id = $1", 123)
 
 				return err
 			})
@@ -293,7 +295,7 @@ func TestPig_Tx(t *testing.T) {
 		defer func() { _ = conn.Close(context.Background()) }()
 
 		conn.ExpectBegin()
-		conn.ExpectExec("DELETE FROM table WHERE id = $1").
+		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnError(errExpected)
 		conn.ExpectRollback()
@@ -302,7 +304,7 @@ func TestPig_Tx(t *testing.T) {
 		err := pig.New(conn).
 			Tx().
 			Exec(func(ex *pig.Ex) error {
-				_, err := ex.Exec("DELETE FROM table WHERE id = $1", 123)
+				_, err := ex.Exec("DELETE FROM things WHERE id = $1", 123)
 
 				return err
 			})
@@ -325,7 +327,7 @@ func TestPig_Tx(t *testing.T) {
 		conn.ExpectExec(`SET local statement_timeout = $1`).
 			WithArgs(int64(1000)).
 			WillReturnResult(pgxmock.NewResult("SET", 1))
-		conn.ExpectExec("DELETE FROM table WHERE id = $1").
+		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
 		conn.ExpectCommit()
@@ -334,7 +336,7 @@ func TestPig_Tx(t *testing.T) {
 		err := pig.New(conn).
 			Tx(pig.StatementTimeout(time.Second)).
 			Exec(func(ex *pig.Ex) error {
-				_, err := ex.Exec("DELETE FROM table WHERE id = $1", 123)
+				_, err := ex.Exec("DELETE FROM things WHERE id = $1", 123)
 
 				return err
 			})
@@ -363,7 +365,7 @@ func TestPig_Tx(t *testing.T) {
 		err := pig.New(conn).
 			Tx(pig.StatementTimeout(time.Second)).
 			Exec(func(ex *pig.Ex) error {
-				_, err := ex.Exec("DELETE FROM table WHERE id = $1", 123)
+				_, err := ex.Exec("DELETE FROM things WHERE id = $1", 123)
 
 				return err
 			})
@@ -386,7 +388,7 @@ func TestPig_Tx(t *testing.T) {
 		conn.ExpectExec(`SET local idle_in_transaction_session_timeout = $1`).
 			WithArgs(int64(1000)).
 			WillReturnResult(pgxmock.NewResult("SET", 1))
-		conn.ExpectExec("DELETE FROM table WHERE id = $1").
+		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
 		conn.ExpectCommit()
@@ -395,7 +397,7 @@ func TestPig_Tx(t *testing.T) {
 		err := pig.New(conn).
 			Tx(pig.TransactionTimeout(time.Second)).
 			Exec(func(ex *pig.Ex) error {
-				_, err := ex.Exec("DELETE FROM table WHERE id = $1", 123)
+				_, err := ex.Exec("DELETE FROM things WHERE id = $1", 123)
 
 				return err
 			})
@@ -424,7 +426,7 @@ func TestPig_Tx(t *testing.T) {
 		err := pig.New(conn).
 			Tx(pig.TransactionTimeout(time.Second)).
 			Exec(func(ex *pig.Ex) error {
-				_, err := ex.Exec("DELETE FROM table WHERE id = $1", 123)
+				_, err := ex.Exec("DELETE FROM things WHERE id = $1", 123)
 
 				return err
 			})
@@ -436,4 +438,67 @@ func TestPig_Tx(t *testing.T) {
 			t.Errorf(`should be "%v", "%v" given`, errExpected, err)
 		}
 	})
+}
+
+func ExamplePig_Query() {
+	conn, err := pgx.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	p := pig.New(conn)
+
+	// Execute query
+	affectedRows, err := p.Query().Exec("DELETE FROM things WHERE id = $1", 123)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("affected", affectedRows, "rows")
+
+	// Get single record from database
+	var cnt int64
+	err = p.Query().Get(&cnt, "SELECT count(*) FROM things")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	type Thing struct {
+		ID       int64  `db:"id"`
+		Name     string `db:"name"`
+		Quantity int64  `db:"quantity"`
+	}
+
+	// Select multiple records
+	var things []Thing
+	err = p.Query().Select(&things, "SELECT * FROM things")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println(things)
+}
+
+func ExamplePig_Tx() {
+	conn, err := pgx.Connect(context.Background(), "")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	p := pig.New(conn)
+
+	var affectedRows int64
+	err = p.Tx().Exec(func(ex *pig.Ex) error {
+		affectedRows, err = p.Query().Exec("DELETE FROM things WHERE id = $1", 123)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	log.Println("affected", affectedRows, "rows")
 }
