@@ -1,0 +1,41 @@
+---
+name: Go
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+  pull_request:
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go:
+          - 1.16.x
+          - tip
+    steps:
+      - name: Check out
+        uses: actions/checkout@v2
+        with:
+          path: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Show Go version
+        run: go version
+      - name: Install dependencies
+        run: go mod vendor
+        working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
+          version: v1.38.0
+      - name: Run tests
+        run: go test -v .
+        working-directory: ${{ github.workspace }}/go/src/github.com/alexeyco/pig
