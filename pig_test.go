@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexeyco/pig"
-	"github.com/jackc/pgx/v4"
-	"github.com/pashagolub/pgxmock"
+	"github.com/jackc/pgx/v5"
+	"github.com/pashagolub/pgxmock/v4"
 	"github.com/pkg/errors"
+
+	"github.com/otetz/pig"
 )
 
 func connect(t *testing.T) pgxmock.PgxConnIface {
@@ -102,6 +103,7 @@ func TestPig_Query(t *testing.T) {
 		defer func() { _ = conn.Close(context.Background()) }()
 
 		conn.ExpectExec("DELETE FROM things WHERE id = $1").
+			WithArgs(123).
 			WillReturnError(errExpected)
 
 		rowsAffected, err := pig.New(conn).
@@ -269,7 +271,6 @@ func TestPig_Tx(t *testing.T) {
 		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
-		conn.ExpectCommit()
 		conn.ExpectRollback()
 
 		err := pig.New(conn).
@@ -298,7 +299,6 @@ func TestPig_Tx(t *testing.T) {
 		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnError(errExpected)
-		conn.ExpectRollback()
 		conn.ExpectRollback()
 
 		err := pig.New(conn).
@@ -330,7 +330,6 @@ func TestPig_Tx(t *testing.T) {
 		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
-		conn.ExpectCommit()
 		conn.ExpectRollback()
 
 		err := pig.New(conn).
@@ -391,7 +390,6 @@ func TestPig_Tx(t *testing.T) {
 		conn.ExpectExec("DELETE FROM things WHERE id = $1").
 			WithArgs(123).
 			WillReturnResult(pgxmock.NewResult("DELETE", 1))
-		conn.ExpectCommit()
 		conn.ExpectRollback()
 
 		err := pig.New(conn).
