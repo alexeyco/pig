@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/alexeyco/pig"
+	"github.com/otetz/pig"
 )
 
 type key int

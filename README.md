@@ -29,7 +29,7 @@ import (
 	"log"
 
 	"github.com/alexeyco/pig"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func main() {
@@ -59,7 +59,7 @@ import (
 	"log"
 
 	"github.com/alexeyco/pig"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func main() {
@@ -90,7 +90,7 @@ import (
 	"log"
 
 	"github.com/alexeyco/pig"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 type Thing struct {
@@ -128,7 +128,7 @@ import (
 	"time"
 
 	"github.com/alexeyco/pig"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 )
 
 func main() {
